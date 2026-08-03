@@ -86,6 +86,25 @@ function M.load(opts)
 
   local p = M.palette
   local bg = M.config.transparent and 'NONE' or p.bg
+  local bg_sidebar = M.config.transparent and 'NONE' or p.bg_alt
+
+  -- Terminal colors
+  vim.g.terminal_color_0  = p.bg
+  vim.g.terminal_color_1  = p.keyword
+  vim.g.terminal_color_2  = p.regex
+  vim.g.terminal_color_3  = p.warn
+  vim.g.terminal_color_4  = p.accent
+  vim.g.terminal_color_5  = p.func
+  vim.g.terminal_color_6  = p.type
+  vim.g.terminal_color_7  = p.fg
+  vim.g.terminal_color_8  = p.fg_muted
+  vim.g.terminal_color_9  = p.err
+  vim.g.terminal_color_10 = p.diff_add_fg
+  vim.g.terminal_color_11 = p.annotation
+  vim.g.terminal_color_12 = p.accent_alt
+  vim.g.terminal_color_13 = p.debug
+  vim.g.terminal_color_14 = p.type
+  vim.g.terminal_color_15 = p.white
 
   local function hl(group, hl_opts)
     vim.api.nvim_set_hl(0, group, hl_opts)
@@ -128,6 +147,55 @@ function M.load(opts)
   hl('TabLine',         { fg = p.fg_dim, bg = p.bg_alt })
   hl('TabLineFill',     { bg = p.bg_alt })
   hl('TabLineSel',      { fg = p.fg_alt, bg = bg, sp = p.accent, underline = true })
+
+  -- Builtin Terminal & ToggleTerm
+  hl('Terminal',              { fg = p.fg, bg = bg })
+  hl('ToggleTermNormal',      { fg = p.fg, bg = bg })
+  hl('ToggleTermNormalNC',    { fg = p.fg, bg = bg })
+  hl('ToggleTermBorder',      { fg = p.border_alt, bg = bg })
+
+  -- Explorers & Sidebars (NvimTree, Neo-tree, Oil, MiniFiles, Netrw, Trouble)
+  hl('SideBar',               { fg = p.fg, bg = bg_sidebar })
+  hl('SideBarNC',             { fg = p.fg, bg = bg_sidebar })
+
+  hl('NvimTreeNormal',        { fg = p.fg, bg = bg_sidebar })
+  hl('NvimTreeNormalNC',      { fg = p.fg, bg = bg_sidebar })
+  hl('NvimTreeWinSeparator',  { fg = p.border, bg = bg_sidebar })
+  hl('NvimTreeEndOfBuffer',   { fg = M.config.transparent and 'NONE' or p.bg_alt, bg = bg_sidebar })
+  hl('NvimTreeRootFolder',    { fg = p.accent, bold = true })
+  hl('NvimTreeGitDirty',      { fg = p.warn })
+  hl('NvimTreeGitNew',        { fg = p.diff_add_fg })
+  hl('NvimTreeGitDeleted',    { fg = p.diff_del_fg })
+
+  hl('NeoTreeNormal',         { fg = p.fg, bg = bg_sidebar })
+  hl('NeoTreeNormalNC',       { fg = p.fg, bg = bg_sidebar })
+  hl('NeoTreeWinSeparator',   { fg = p.border, bg = bg_sidebar })
+  hl('NeoTreeEndOfBuffer',    { fg = M.config.transparent and 'NONE' or p.bg_alt, bg = bg_sidebar })
+  hl('NeoTreeRootName',       { fg = p.accent, bold = true })
+  hl('NeoTreeGitAdded',       { fg = p.diff_add_fg })
+  hl('NeoTreeGitConflict',    { fg = p.err })
+  hl('NeoTreeGitDeleted',     { fg = p.diff_del_fg })
+  hl('NeoTreeGitModified',    { fg = p.warn })
+  hl('NeoTreeGitUntracked',   { fg = p.diff_add_fg })
+  hl('NeoTreeTabActive',      { fg = p.fg_alt, bg = bg, bold = true })
+  hl('NeoTreeTabInactive',    { fg = p.fg_dim, bg = bg_sidebar })
+  hl('NeoTreeTabSeparatorActive',   { fg = p.border, bg = bg })
+  hl('NeoTreeTabSeparatorInactive', { fg = p.border, bg = bg_sidebar })
+
+  hl('OilNormal',             { fg = p.fg, bg = bg })
+  hl('OilNormalNC',           { fg = p.fg, bg = bg })
+
+  hl('MiniFilesNormal',       { fg = p.fg, bg = bg })
+  hl('MiniFilesBorder',       { fg = p.border_alt, bg = bg })
+  hl('MiniFilesTitle',        { fg = p.fg_alt, bg = bg, bold = true })
+
+  hl('TroubleNormal',         { fg = p.fg, bg = bg_sidebar })
+  hl('TroubleNormalNC',       { fg = p.fg, bg = bg_sidebar })
+
+  hl('AerialNormal',          { fg = p.fg, bg = bg_sidebar })
+  hl('AerialNormalNC',        { fg = p.fg, bg = bg_sidebar })
+  hl('OutlineNormal',         { fg = p.fg, bg = bg_sidebar })
+  hl('OutlineNormalNC',       { fg = p.fg, bg = bg_sidebar })
 
   -- Popup menus / completion
   hl('Pmenu',           { fg = p.fg, bg = p.bg_menu })
