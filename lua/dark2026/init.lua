@@ -1,8 +1,10 @@
 local M = {}
 
-M.config = {
+local defaults = {
   transparent = false,
 }
+
+M._opts = nil
 
 M.palette = {
   -- Backgrounds (darkest -> lightest)
@@ -64,7 +66,16 @@ M.palette = {
 }
 
 function M.setup(opts)
-  M.config = vim.tbl_deep_extend('force', M.config, opts or {})
+  M._opts = vim.tbl_deep_extend('force', defaults, M._opts or {}, opts or {})
+  vim.g.dark2026_opts = M._opts
+end
+
+local function get_effective_opts()
+  local opts = vim.tbl_deep_extend('force', defaults, vim.g.dark2026_opts or {}, M._opts or {})
+  if vim.g.dark2026_transparent ~= nil then
+    opts.transparent = vim.g.dark2026_transparent
+  end
+  return opts
 end
 
 function M.load(opts)
@@ -72,10 +83,7 @@ function M.load(opts)
     M.setup(opts)
   end
 
-  -- Check global variable fallback if setup wasn't explicitly called with transparent option
-  if vim.g.dark2026_transparent ~= nil then
-    M.config.transparent = vim.g.dark2026_transparent
-  end
+  local config = get_effective_opts()
 
   vim.cmd 'highlight clear'
   if vim.fn.exists 'syntax_on' == 1 then
@@ -85,8 +93,12 @@ function M.load(opts)
   vim.g.colors_name = 'dark2026'
 
   local p = M.palette
-  local bg = M.config.transparent and 'NONE' or p.bg
-  local bg_sidebar = M.config.transparent and 'NONE' or p.bg_alt
+  local is_transparent = config.transparent
+
+  local bg         = is_transparent and 'NONE' or p.bg
+  local bg_sidebar = is_transparent and 'NONE' or p.bg_alt
+  local bg_menu    = is_transparent and 'NONE' or p.bg_menu
+  local bg_status  = is_transparent and 'NONE' or p.bg_alt
 
   -- Terminal colors
   vim.g.terminal_color_0  = p.bg
@@ -113,11 +125,11 @@ function M.load(opts)
   -- Editor / UI
   hl('Normal',          { fg = p.fg, bg = bg })
   hl('NormalNC',        { fg = p.fg, bg = bg })
-  hl('NormalFloat',     { fg = p.fg, bg = p.bg_menu })
-  hl('FloatBorder',     { fg = p.border_alt, bg = p.bg_menu })
-  hl('FloatTitle',      { fg = p.fg_alt, bg = p.bg_menu, bold = true })
+  hl('NormalFloat',     { fg = p.fg, bg = bg_menu })
+  hl('FloatBorder',     { fg = p.border_alt, bg = bg_menu })
+  hl('FloatTitle',      { fg = p.fg_alt, bg = bg_menu, bold = true })
   hl('NonText',         { fg = p.fg_muted })
-  hl('EndOfBuffer',     { fg = p.bg, bg = bg })
+  hl('EndOfBuffer',     { fg = is_transparent and 'NONE' or p.bg, bg = bg })
   hl('Whitespace',      { fg = p.fg_muted })
   hl('SpecialKey',      { fg = p.fg_muted })
   hl('Conceal',         { fg = p.fg_dim })
@@ -126,8 +138,8 @@ function M.load(opts)
   hl('CursorLine',      { bg = p.bg_line })
   hl('CursorColumn',    { bg = p.bg_line })
   hl('ColorColumn',     { bg = p.bg_line })
-  hl('LineNr',          { fg = p.fg_muted })
-  hl('CursorLineNr',    { fg = p.fg_alt, bold = true })
+  hl('LineNr',          { fg = p.fg_muted, bg = bg })
+  hl('CursorLineNr',    { fg = p.fg_alt, bg = bg, bold = true })
   hl('SignColumn',      { bg = bg })
   hl('FoldColumn',      { fg = p.fg_muted, bg = bg })
   hl('Folded',          { fg = p.fg_dim, bg = p.bg_line })
@@ -139,17 +151,22 @@ function M.load(opts)
   hl('CurSearch',       { fg = p.white, bg = p.accent })
   hl('MatchParen',      { fg = p.accent_alt, bold = true, underline = true })
 
-  hl('StatusLine',      { fg = p.fg_dim, bg = p.bg_alt })
-  hl('StatusLineNC',    { fg = p.fg_muted, bg = p.bg_alt })
+  hl('StatusLine',      { fg = p.fg_dim, bg = bg_status })
+  hl('StatusLineNC',    { fg = p.fg_muted, bg = bg_status })
   hl('WinSeparator',    { fg = p.border, bg = bg })
   hl('VertSplit',       { fg = p.border, bg = bg })
 
-  hl('TabLine',         { fg = p.fg_dim, bg = p.bg_alt })
-  hl('TabLineFill',     { bg = p.bg_alt })
+  hl('WinBar',          { fg = p.fg_dim, bg = bg, bold = true })
+  hl('WinBarNC',        { fg = p.fg_muted, bg = bg })
+
+  hl('TabLine',         { fg = p.fg_dim, bg = bg_status })
+  hl('TabLineFill',     { bg = bg_status })
   hl('TabLineSel',      { fg = p.fg_alt, bg = bg, sp = p.accent, underline = true })
 
   -- Builtin Terminal & ToggleTerm
   hl('Terminal',              { fg = p.fg, bg = bg })
+  hl('TermCursor',            { fg = p.bg, bg = p.fg })
+  hl('TermCursorNC',          { fg = p.bg, bg = p.fg_dim })
   hl('ToggleTermNormal',      { fg = p.fg, bg = bg })
   hl('ToggleTermNormalNC',    { fg = p.fg, bg = bg })
   hl('ToggleTermBorder',      { fg = p.border_alt, bg = bg })
@@ -160,8 +177,9 @@ function M.load(opts)
 
   hl('NvimTreeNormal',        { fg = p.fg, bg = bg_sidebar })
   hl('NvimTreeNormalNC',      { fg = p.fg, bg = bg_sidebar })
+  hl('NvimTreeNormalFloat',   { fg = p.fg, bg = bg_menu })
   hl('NvimTreeWinSeparator',  { fg = p.border, bg = bg_sidebar })
-  hl('NvimTreeEndOfBuffer',   { fg = M.config.transparent and 'NONE' or p.bg_alt, bg = bg_sidebar })
+  hl('NvimTreeEndOfBuffer',   { fg = is_transparent and 'NONE' or p.bg_alt, bg = bg_sidebar })
   hl('NvimTreeRootFolder',    { fg = p.accent, bold = true })
   hl('NvimTreeGitDirty',      { fg = p.warn })
   hl('NvimTreeGitNew',        { fg = p.diff_add_fg })
@@ -169,8 +187,10 @@ function M.load(opts)
 
   hl('NeoTreeNormal',         { fg = p.fg, bg = bg_sidebar })
   hl('NeoTreeNormalNC',       { fg = p.fg, bg = bg_sidebar })
+  hl('NeoTreeNormalFloat',    { fg = p.fg, bg = bg_menu })
+  hl('NeoTreeFloatBorder',    { fg = p.border_alt, bg = bg_menu })
   hl('NeoTreeWinSeparator',   { fg = p.border, bg = bg_sidebar })
-  hl('NeoTreeEndOfBuffer',    { fg = M.config.transparent and 'NONE' or p.bg_alt, bg = bg_sidebar })
+  hl('NeoTreeEndOfBuffer',    { fg = is_transparent and 'NONE' or p.bg_alt, bg = bg_sidebar })
   hl('NeoTreeRootName',       { fg = p.accent, bold = true })
   hl('NeoTreeGitAdded',       { fg = p.diff_add_fg })
   hl('NeoTreeGitConflict',    { fg = p.err })
@@ -184,10 +204,12 @@ function M.load(opts)
 
   hl('OilNormal',             { fg = p.fg, bg = bg })
   hl('OilNormalNC',           { fg = p.fg, bg = bg })
+  hl('OilFloat',              { fg = p.fg, bg = bg_menu })
+  hl('OilFloatBorder',        { fg = p.border_alt, bg = bg_menu })
 
-  hl('MiniFilesNormal',       { fg = p.fg, bg = bg })
-  hl('MiniFilesBorder',       { fg = p.border_alt, bg = bg })
-  hl('MiniFilesTitle',        { fg = p.fg_alt, bg = bg, bold = true })
+  hl('MiniFilesNormal',       { fg = p.fg, bg = bg_menu })
+  hl('MiniFilesBorder',       { fg = p.border_alt, bg = bg_menu })
+  hl('MiniFilesTitle',        { fg = p.fg_alt, bg = bg_menu, bold = true })
 
   hl('TroubleNormal',         { fg = p.fg, bg = bg_sidebar })
   hl('TroubleNormalNC',       { fg = p.fg, bg = bg_sidebar })
@@ -198,13 +220,13 @@ function M.load(opts)
   hl('OutlineNormalNC',       { fg = p.fg, bg = bg_sidebar })
 
   -- Popup menus / completion
-  hl('Pmenu',           { fg = p.fg, bg = p.bg_menu })
+  hl('Pmenu',           { fg = p.fg, bg = bg_menu })
   hl('PmenuSel',        { fg = p.fg_alt, bg = p.accent_dim })
   hl('PmenuSbar',       { bg = p.bg_line })
   hl('PmenuThumb',      { bg = p.fg_muted })
-  hl('PmenuKind',       { fg = p.func, bg = p.bg_menu })
+  hl('PmenuKind',       { fg = p.func, bg = bg_menu })
   hl('PmenuKindSel',    { fg = p.func, bg = p.accent_dim })
-  hl('PmenuExtra',      { fg = p.fg_dim, bg = p.bg_menu })
+  hl('PmenuExtra',      { fg = p.fg_dim, bg = bg_menu })
   hl('PmenuExtraSel',   { fg = p.fg_alt, bg = p.accent_dim })
   hl('PmenuMatch',      { fg = p.accent_alt, bold = true })
   hl('PmenuMatchSel',   { fg = p.accent_alt, bg = p.accent_dim, bold = true })
@@ -385,21 +407,21 @@ function M.load(opts)
   hl('GitSignsDelete',  { fg = p.diff_del_fg })
 
   -- Telescope / Snacks picker
-  hl('TelescopeBorder',         { fg = p.border, bg = p.bg_menu })
-  hl('TelescopeNormal',         { fg = p.fg, bg = p.bg_menu })
+  hl('TelescopeBorder',         { fg = p.border, bg = bg_menu })
+  hl('TelescopeNormal',         { fg = p.fg, bg = bg_menu })
   hl('TelescopeSelection',      { fg = p.fg_alt, bg = p.accent_dim })
   hl('TelescopeMatching',       { fg = p.accent_alt, bold = true })
   hl('TelescopePromptPrefix',   { fg = p.accent })
 
-  hl('SnacksPickerBorder',      { fg = p.border, bg = p.bg_menu })
-  hl('SnacksPickerNormal',      { fg = p.fg, bg = p.bg_menu })
+  hl('SnacksPickerBorder',      { fg = p.border, bg = bg_menu })
+  hl('SnacksPickerNormal',      { fg = p.fg, bg = bg_menu })
   hl('SnacksPickerListCursorLine', { bg = p.accent_dim })
-  hl('SnacksPickerInputBorder', { fg = p.accent_dim, bg = p.bg_menu })
+  hl('SnacksPickerInputBorder', { fg = p.accent_dim, bg = bg_menu })
   hl('SnacksPickerMatch',       { fg = p.accent_alt, bold = true })
 
-  -- blink.cmp (vague's missing groups too — keep parity with custom highlights)
+  -- blink.cmp
   hl('BlinkCmpMenu',                { link = 'Pmenu' })
-  hl('BlinkCmpMenuBorder',          { fg = p.border_alt, bg = p.bg_menu })
+  hl('BlinkCmpMenuBorder',          { fg = p.border_alt, bg = bg_menu })
   hl('BlinkCmpMenuSelection',       { link = 'PmenuSel' })
   hl('BlinkCmpScrollBarThumb',      { link = 'PmenuThumb' })
   hl('BlinkCmpScrollBarGutter',     { link = 'PmenuSbar' })
@@ -410,11 +432,11 @@ function M.load(opts)
   hl('BlinkCmpLabelDescription',    { fg = p.fg_dim })
   hl('BlinkCmpSource',              { fg = p.fg_dim })
   hl('BlinkCmpDoc',                 { link = 'NormalFloat' })
-  hl('BlinkCmpDocBorder',           { fg = p.border_alt, bg = p.bg_menu })
+  hl('BlinkCmpDocBorder',           { fg = p.border_alt, bg = bg_menu })
 
-  -- Bufferline (light touch)
-  hl('BufferLineFill',          { bg = p.bg_alt })
-  hl('BufferLineBackground',    { fg = p.fg_dim, bg = p.bg_alt })
+  -- Bufferline
+  hl('BufferLineFill',          { bg = bg_status })
+  hl('BufferLineBackground',    { fg = p.fg_dim, bg = bg_status })
   hl('BufferLineBufferSelected',{ fg = p.fg_alt, bg = bg, bold = true })
   hl('BufferLineIndicatorSelected', { fg = p.accent, bg = bg })
 
@@ -423,7 +445,7 @@ function M.load(opts)
   hl('WhichKeyGroup',           { fg = p.func })
   hl('WhichKeyDesc',            { fg = p.fg })
   hl('WhichKeySeparator',       { fg = p.fg_dim })
-  hl('WhichKeyFloat',           { bg = p.bg_menu })
+  hl('WhichKeyFloat',           { bg = bg_menu })
 end
 
 return M
